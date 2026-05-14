@@ -1,201 +1,128 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
+from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 
+# ==========================================================
+# 1. 여기에 본인의 구글 스프레드시트 주소를 입력하세요!
+# ==========================================================
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1ZtaUpB-KgtOMnEwqIKzjh5Jc7ln-HkFOwKZho4o_Z7g/edit#gid=0"
+# ==========================================================
+
+# 페이지 기본 설정
 st.set_page_config(
-    page_title="KGC Marketing Intelligence Dashboard",
+    page_title="KGC 마케팅 전략 대시보드",
     page_icon="🔴",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
-# KGC 브랜드 아이덴티티 및 디자인 토큰 적용
+# KGC 브랜드 스타일 적용 (CSS)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-    
-    :root {
-        --kgc-red: #b91c1c;
-        --dark-slate: #1e293b;
-    }
-    
-    .main {
-        background-color: #f1f5f9;
-        font-family: 'Noto Sans KR', sans-serif;
-    }
-    
-    /* 카드 스타일 커스텀 */
-    div[data-testid="stMetric"] {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--kgc-red);
-    }
-    
+    :root { --kgc-red: #b91c1c; --dark-slate: #1e293b; }
+    .main { background-color: #f1f5f9; font-family: 'Noto Sans KR', sans-serif; }
     .kgc-header {
         background-color: var(--dark-slate);
         color: white;
         padding: 2rem;
         border-radius: 1rem;
         margin-bottom: 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
-    
-    .roadmap-card {
-        background: var(--dark-slate);
-        color: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        margin-top: 2rem;
+    .insight-box {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border-left: 6px solid var(--kgc-red);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 데이터 준비
-sales_data = {
-    'Region': ['수도권 (CVS)', '수도권 (마트)', '지방 (CVS)', '지방 (마트)'],
-    'Growth': [15, 8, 3, -2]
-}
-df_sales = pd.DataFrame(sales_data)
+# 구글 스프레드시트 연결 객체 생성
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-trend_data = {
-    'Week': ['3월 1주', '3월 2주', '3월 3주', '3월 4주'],
-    'Hiking': [120, 150, 190, 260],
-    'Tennis': [80, 110, 160, 230]
-}
-df_trend = pd.DataFrame(trend_data)
+@st.cache_data(ttl=600) # 10분 캐싱
+def load_data(url):
+    # 각 시트의 데이터를 SHEET_URL을 직접 참조하여 읽어옵니다.
+    kpi_df = conn.read(spreadsheet=url, worksheet="KPI", nrows=4)
+    full_kpi = conn.read(spreadsheet=url, worksheet="KPI")
+    summary = full_kpi.iloc[5, 0] if len(full_kpi) > 5 else "데이터 분석 중..."
+    
+    region_df = conn.read(spreadsheet=url, worksheet="지역")
+    age_df = conn.read(spreadsheet=url, worksheet="연령")
+    
+    return kpi_df, summary, region_df, age_df
 
-sentiment_data = [
-    {'x': 1, 'y': 5, 'text': '맛 개선(긍정)', 'size': 40, 'color': '#10b981'},
-    {'x': 2, 'y': 4, 'text': '디자인(긍정)', 'size': 30, 'color': '#10b981'},
-    {'x': 3, 'y': 1, 'text': '가격저항(부정)', 'size': 35, 'color': '#ef4444'},
-    {'x': 4, 'y': 2, 'text': '패키징불편(부정)', 'size': 20, 'color': '#f59e0b'},
-    {'x': 1.5, 'y': 4.5, 'text': '선물용 적합', 'size': 25, 'color': '#10b981'}
-]
-df_sentiment = pd.DataFrame(sentiment_data)
+try:
+    # 데이터 불러오기 실행
+    df_kpi, summary_text, df_region, df_age = load_data(SHEET_URL)
 
-# 상단 헤더
-st.markdown(f"""
-    <div class="kgc-header">
-        <div>
-            <h1 style='margin:0; color:white; font-size: 2rem;'>정관장 에브리타임 밸런스 <span style='color:#f87171;'>리뉴얼 성과</span></h1>
-            <p style='margin:0.5rem 0 0 0; color:#94a3b8; font-size: 1.1rem;'>2026년 3월 4주차 마케팅 전략 인텔리전스</p>
+    # [상단 헤더]
+    st.markdown(f"""
+        <div class="kgc-header">
+            <h1 style='margin:0; font-size: 2.2rem;'>정관장 에브리타임 밸런스 <span style='color:#f87171;'>전략 리포트</span></h1>
+            <p style='margin:0.5rem 0 0 0; color:#94a3b8;'>기준일: {datetime.now().strftime('%Y.%m.%d')} (실시간 연동 모드)</p>
         </div>
-        <div style='text-align:right;'>
-            <div style='background:#b91c1c; padding:0.3rem 1rem; border-radius:1rem; font-size:0.8rem; font-weight:bold;'>INTERNAL ONLY</div>
-            <p style='font-size:0.8rem; margin-top:0.5rem; color:#94a3b8;'>기준일: {datetime.now().strftime('%Y.%m.%d')}</p>
+        """, unsafe_allow_html=True)
+
+    # [전략 인사이트 박스] - KPI 시트의 7행 데이터
+    st.markdown(f"""
+        <div class="insight-box">
+            <h4 style='margin-top:0; color:#1e293b;'>📢 Weekly Strategic Insight</h4>
+            <p style='margin:0; color:#334155; font-size: 1.1rem; line-height: 1.6;'>{summary_text}</p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-# 핵심 지표 (KPI)
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("수도권 판매 성장", "+15.0%", "▲ CVS 채널 주도")
-with col2:
-    st.metric("지방 판매 추이", "-2.0%", "▼ 대형마트 정체", delta_color="inverse")
-with col3:
-    st.metric("2030 구매 비중", "45%", "Target Reached")
-with col4:
-    st.metric("아웃도어 키워드", "+30%", "Buzz Up")
+    # [KPI 지표 레이아웃]
+    cols = st.columns(4)
+    for i, row in df_kpi.iterrows():
+        if i < 4:
+            with cols[i]:
+                val = row['value']
+                display_val = f"{val*100:.1f}%" if isinstance(val, float) and val <= 1 else f"{val}"
+                st.metric(label=row['label'], value=display_val, delta=row['delta'])
 
-st.write("---")
+    st.write("---")
 
-# 차트 영역
-main_col1, main_col2 = st.columns(2)
+    # [하단 차트 섹션]
+    col_left, col_right = st.columns(2)
 
-with main_col1:
-    # 차트 1: 권역별 판매 실적
-    fig_sales = px.bar(
-        df_sales, 
-        x='Region', 
-        y='Growth',
-        title="권역별 판매 실적 증감율 (%)",
-        color='Growth',
-        color_continuous_scale=['#f87171', '#b91c1c'],
-        text_auto='.1f'
-    )
-    fig_sales.update_layout(
-        showlegend=False, 
-        plot_bgcolor='rgba(0,0,0,0)', 
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=50, b=20, l=0, r=0)
-    )
-    st.plotly_chart(fig_sales, use_container_width=True)
+    with col_left:
+        st.subheader("📍 지역별 성장률 (편의점 vs 마트)")
+        fig_region = px.bar(
+            df_region, x='지역', y='성장률', text_auto=True,
+            color='성장률', color_continuous_scale=['#fca5a5', '#b91c1c']
+        )
+        fig_region.update_layout(plot_bgcolor='rgba(0,0,0,0)', yaxis_title="성장률 (%)", xaxis_title=None)
+        st.plotly_chart(fig_region, use_container_width=True)
 
-with main_col2:
-    # 차트 2: 라이프스타일 트렌드
-    fig_trend = go.Figure()
-    fig_trend.add_trace(go.Scatter(
-        x=df_trend['Week'], y=df_trend['Hiking'], 
-        name='등산', line=dict(color='#b91c1c', width=4), 
-        fill='tozeroy', mode='lines+markers'
-    ))
-    fig_trend.add_trace(go.Scatter(
-        x=df_trend['Week'], y=df_trend['Tennis'], 
-        name='테니스', line=dict(color='#3b82f6', width=4), 
-        fill='tozeroy', mode='lines+markers'
-    ))
-    fig_trend.update_layout(
-        title="Active Care 키워드 버즈량 추이", 
-        plot_bgcolor='rgba(0,0,0,0)', 
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=50, b=20, l=0, r=0),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    st.plotly_chart(fig_trend, use_container_width=True)
+    with col_right:
+        st.subheader("👥 구매 연령대별 비중")
+        fig_age = px.pie(
+            df_age, names='연령대', values='비중', hole=0.4,
+            color_discrete_sequence=['#b91c1c', '#334155', '#94a3b8']
+        )
+        fig_age.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig_age, use_container_width=True)
 
-# 고객 리뷰 감성 분석
-st.subheader("📊 고객 리뷰 감성 클러스터 (N=500)")
-fig_sentiment = px.scatter(
-    df_sentiment, x='x', y='y', text='text', size='size',
-    color='color', color_discrete_map='identity',
-    title="고객 피드백 주요 테마 분석"
-)
-fig_sentiment.update_traces(textposition='top center')
-fig_sentiment.update_layout(
-    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, title=""),
-    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, title=""),
-    plot_bgcolor='#f8fafc',
-    height=450
-)
-st.plotly_chart(fig_sentiment, use_container_width=True)
+except Exception as e:
+    st.error(f"데이터 연동 중 오류가 발생했습니다.")
+    st.write(f"상세 에러: {e}")
+    st.info("💡 해결 방법: 코드 상단의 SHEET_URL이 정확한지, 구글 시트 공유 설정이 '링크가 있는 모든 사용자(뷰어)'인지 확인해 주세요.")
 
-# 하단 전략 로드맵
-st.markdown("""
-    <div class="roadmap-card">
-        <h2 style='color:white; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;'>
-            <span style='width:30px; height:5px; background:#3b82f6;'></span>
-            전략 실행 로드맵 (Action Plan)
-        </h2>
-        <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;'>
-            <div style='border-left: 1px solid #475569; padding-left: 1.5rem;'>
-                <h4 style='color:#60a5fa; font-size:0.8rem; letter-spacing:1px;'>PHASE 01. AMPLIFY</h4>
-                <p style='font-weight:bold; margin:0.5rem 0;'>아웃도어 접점 강화</p>
-                <p style='font-size:0.85rem; color:#cbd5e1;'>테니스장/등산로 입구 CVS 전용 프로모션 및 매대 확장</p>
-            </div>
-            <div style='border-left: 1px solid #475569; padding-left: 1.5rem;'>
-                <h4 style='color:#34d399; font-size:0.8rem; letter-spacing:1px;'>PHASE 02. ACTIVATE</h4>
-                <p style='font-weight:bold; margin:0.5rem 0;'>지역 마트 활성화</p>
-                <p style='font-size:0.85rem; color:#cbd5e1;'>지방 대형마트 시음회 재개 및 리뉴얼 체험 키트 집중 배포</p>
-            </div>
-            <div style='border-left: 1px solid #475569; padding-left: 1.5rem;'>
-                <h4 style='color:#fbbf24; font-size:0.8rem; letter-spacing:1px;'>PHASE 03. OPTIMIZE</h4>
-                <p style='font-weight:bold; margin:0.5rem 0;'>패키징 UX 개선</p>
-                <p style='font-size:0.85rem; color:#cbd5e1;'>박스 지기 구조 공정 점검 및 개봉 편의성 개선 (CS 연계)</p>
-            </div>
-            <div style='border-left: 1px solid #475569; padding-left: 1.5rem;'>
-                <h4 style='color:#f472b6; font-size:0.8rem; letter-spacing:1px;'>PHASE 04. VALUE UP</h4>
-                <p style='font-weight:bold; margin:0.5rem 0;'>가격 저항선 관리</p>
-                <p style='font-size:0.85rem; color:#cbd5e1;'>CVS 소포장(3포) 번들 기획 및 정기 구독 혜택 강화</p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.75rem;'>본 리포트는 구글 스프레드시트 데이터를 실시간으로 반영합니다.</p>", unsafe_allow_html=True)
+```eof
 
-st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.7rem;'>© 2026 KGC Brand Strategy Team | Confidential & Internal Use Only</p>", unsafe_allow_html=True)
+### 🛠 수정 방법 (필독)
+
+1.  **URL 변경**: 위 코드의 **11행**에 있는 `SHEET_URL = "..."` 부분의 따옴표 안에 본인의 구글 스프레드시트 전체 주소를 복사해서 넣어주세요.
+2.  **구글 시트 설정**:
+    *   구글 시트 오른쪽 위 **[공유]** 버튼 클릭
+    *   '일반 액세스'를 **[링크가 있는 모든 사용자]**로 변경
+    *   권한은 **[뷰어]**로 유지
+3.  **저장 및 업데이트**: 수정된 `app.py`를 깃허브에 올리면 즉시 반영됩니다.
+
+**중요:** `conn.read()` 함수 안에 `spreadsheet=url` 매개변수를 직접 전달하도록 수정했으므로, 이제 별도의 Secrets 설정 없이도 이 URL을 통해 데이터를 가져오게 됩니다.
