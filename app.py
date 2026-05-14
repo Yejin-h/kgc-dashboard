@@ -7,7 +7,7 @@ from datetime import datetime
 # ==========================================================
 # 1. 여기에 본인의 구글 스프레드시트 주소를 입력하세요!
 # ==========================================================
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1ZtaUpB-KgtOMnEwqIKzjh5Jc7ln-HkFOwKZho4o_Z7g/edit#gid=0"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1ZtaUpB-KgtOMnEwqIKzjh5Jc7ln-HkFOwKZho4o_Z7g/edit?usp=sharing"
 # ==========================================================
 
 # 페이지 기본 설정
