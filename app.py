@@ -116,4 +116,4 @@ except Exception as e:
 st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.75rem;'>본 리포트는 구글 스프레드시트 데이터를 실시간으로 반영합니다.</p>", unsafe_allow_html=True)
 
 
-**중요:** `conn.read()` 함수 안에 `spreadsheet=url` 매개변수를 직접 전달하도록 수정했으므로, 이제 별도의 Secrets 설정 없이도 이 URL을 통해 데이터를 가져오게 됩니다.
+
