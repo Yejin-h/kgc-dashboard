@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KGC 마케팅 전략 인텔리전스 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background-color: #f1f5f9; }
+        .kgc-red { color: #b91c1c; }
+        .bg-kgc-red { background-color: #b91c1c; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        .ai-border { border: 1px solid rgba(14, 165, 233, 0.2); position: relative; overflow: hidden; }
+        .ai-border::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #0ea5e9; }
+        .loading-shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+<nav class="bg-[#1e293b] text-white py-4 px-6 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-kgc-red rounded-lg flex items-center justify-center font-bold text-xs italic">KGC</div>
+            <span class="font-bold tracking-tight text-lg">Marketing Intelligence <span class="text-blue-400">v2.5</span></span>
+        </div>
+        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-300">
+            <a href="#" class="hover:text-white transition">성과 분석</a>
+            <a href="#" class="hover:text-white transition">고객 인사이트</a>
+            <a href="#" class="hover:text-white transition">AI 전략</a>
+        </div>
+        <div class="text-xs bg-slate-700 px-3 py-1 rounded-full text-slate-300">2026.05.14 기준</div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto p-6 space-y-6">
+    
+    <header class="flex flex-col lg:flex-row gap-6">
+        <div class="flex-1 space-y-2">
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">정관장 에브리타임 밸런스 <span class="text-kgc-red">리뉴얼 성과</span></h1>
+            <p class="text-slate-500 max-w-2xl text-lg leading-relaxed">
+                2026년 3월 4주차 데이터를 기반으로 한 전략 보고서입니다. 수도권 CVS 채널의 2030 유입 가속화와 아웃도어 트렌드 확장이 핵심 기회 요인으로 분석되었습니다.
+            </p>
+        </div>
+        <div class="lg:w-96">
+            <div class="card p-5 ai-border bg-gradient-to-br from-white to-blue-50 h-full">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-bold text-blue-700 uppercase tracking-wider">AI Strategist</span>
+                </div>
+                <div id="aiSummaryBox" class="text-sm text-slate-600 leading-relaxed min-h-[80px]">
+                    데이터 분석을 통해 실시간 전략 인사이트를 도출할 수 있습니다. 아래 버튼을 눌러 시작하세요.
+                </div>
+                <button onclick="runAISummary()" id="aiBtn" class="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    전략 인사이트 생성
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card p-5 border-l-4 border-emerald-500">
+            <p class="text-xs font-bold text-slate-400 uppercase">수도권 판매 성장</p>
+            <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-2xl font-bold text-slate-800">+15.0%</span>
+                <span class="text-xs font-bold text-emerald-600 font-mono">▲ 전주대비</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">CVS 채널 주도 성장</p>
+        </div>
+        <div class="card p-5 border-l-4 border-red-500">
+            <p class="text-xs font-bold text-slate-400 uppercase">지방 판매 추이</p>
+            <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-2xl font-bold text-slate-800">-2.0%</span>
+                <span class="text-xs font-bold text-red-600 font-mono">▼ 전주대비</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">대형마트 채널 정체</p>
+        </div>
+        <div class="card p-5 border-l-4 border-blue-500">
+            <p class="text-xs font-bold text-slate-400 uppercase">2030 구매 비중</p>
+            <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-2xl font-bold text-slate-800">45%</span>
+                <span class="text-xs font-bold text-blue-600 font-mono">Target Reached</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">사회초년생 유입 성공</p>
+        </div>
+        <div class="card p-5 border-l-4 border-orange-500">
+            <p class="text-xs font-bold text-slate-400 uppercase">아웃도어 키워드</p>
+            <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-2xl font-bold text-slate-800">+30%</span>
+                <span class="text-xs font-bold text-orange-600 font-mono">Buzz Up</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">등산/테니스 관심도 폭증</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Regional & Channel -->
+        <div class="card p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-slate-800">권역별 판매 실적 (수도권 vs 지방)</h3>
+                <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold">Chart.js</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="regionalChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Lifestyle Trend -->
+        <div class="card p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-slate-800">Active Care 트렌드 (키워드 빈도)</h3>
+                <div class="flex gap-2">
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span><span class="text-[10px]">등산</span></div>
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-[10px]">테니스</span></div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="lifestyleTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sentiment Cluster -->
+        <div class="lg:col-span-2 card p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">고객 리뷰 감성 클러스터 (N=500)</h3>
+                <p class="text-xs text-slate-400">Plotly Scatter Map</p>
+            </div>
+            <div id="sentimentPlot" class="w-full h-80"></div>
+        </div>
+
+        <!-- Ad Copy Generator -->
+        <div class="card p-6 flex flex-col">
+            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.167H3.3a1.83 1.83 0 01-1.83-1.83V9.083m1.83 0h2.317l2.147-6.167a1.76 1.76 0 013.417.592z" /></svg>
+                SNS 캠페인 카피 AI
+            </h3>
+            <div class="space-y-3 flex-1 overflow-y-auto pr-2 mb-4" id="copyContainer">
+                <div class="p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-400 italic">
+                    플랫폼 버튼을 클릭하여 트렌드 맞춤형 카피를 생성하세요.
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-auto">
+                <button onclick="generateAdCopy('Instagram')" class="py-2 text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition">Instagram</button>
+                <button onclick="generateAdCopy('TikTok')" class="py-2 text-xs font-bold bg-black text-white rounded-lg hover:opacity-90 transition">TikTok</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="card p-8 bg-[#1e293b] text-white overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+            <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
+            <span class="w-8 h-1 bg-blue-500"></span>
+            전략 실행 로드맵 (Action Plan)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="space-y-3 border-l border-slate-600 pl-4">
+                <div class="text-blue-400 font-bold text-sm tracking-tighter">PHASE 01. AMPLIFY</div>
+                <h4 class="font-bold">아웃도어 접점 강화</h4>
+                <p class="text-xs text-slate-400 leading-relaxed italic">테니스장/등산로 입구 CVS 대상 전용 매대 구성 및 프로모션</p>
+            </div>
+            <div class="space-y-3 border-l border-slate-600 pl-4">
+                <div class="text-emerald-400 font-bold text-sm tracking-tighter">PHASE 02. ACTIVATE</div>
+                <h4 class="font-bold">지역 마트 활성화</h4>
+                <p class="text-xs text-slate-400 leading-relaxed italic">지방 대형마트 시음회 재개 및 리뉴얼 체험 키트 집중 배포</p>
+            </div>
+            <div class="space-y-3 border-l border-slate-600 pl-4">
+                <div class="text-orange-400 font-bold text-sm tracking-tighter">PHASE 03. OPTIMIZE</div>
+                <h4 class="font-bold">패키징 UX 개선</h4>
+                <p class="text-xs text-slate-400 leading-relaxed italic">박스 지기 구조 공정 점검 및 개봉 편의성 개선 (CS 연계)</p>
+            </div>
+            <div class="space-y-3 border-l border-slate-600 pl-4">
+                <div class="text-pink-400 font-bold text-sm tracking-tighter">PHASE 04. VALUE UP</div>
+                <h4 class="font-bold">가격 저항선 관리</h4>
+                <p class="text-xs text-slate-400 leading-relaxed italic">CVS 소포장(3포) 번들 기획 및 정기 구독 혜택 강화</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="text-center py-10 text-slate-400 text-[10px] uppercase tracking-widest">
+    &copy; 2026 KGC Brand Strategy Team | Internal Strategy Intelligence System
+</footer>
+
+<script>
+    const API_KEY = ""; // Environment handles this
+    const MODEL_NAME = "gemini-3-flash-preview";
+
+    // Chart.js Default Config
+    Chart.defaults.font.family = "'Inter', 'Noto Sans KR'";
+    Chart.defaults.color = "#64748b";
+
+    /**
+     * STREAMING_CHUNK:Defining Chart Initialization...
+     */
+    function initCharts() {
+        // 1. Regional Chart (Bar)
+        const ctxRegional = document.getElementById('regionalChart').getContext('2d');
+        new Chart(ctxRegional, {
+            type: 'bar',
+            data: {
+                labels: ['수도권 (CVS)', '수도권 (마트)', '지방 (CVS)', '지방 (마트)'],
+                datasets: [{
+                    label: '전주 대비 증감율 (%)',
+                    data: [15, 8, 3, -2],
+                    backgroundColor: ['#b91c1c', '#f87171', '#334155', '#94a3b8'],
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { callback: v => v + '%' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 2. Lifestyle Trend (Line)
+        const ctxTrend = document.getElementById('lifestyleTrendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['3월 1주', '3월 2주', '3월 3주', '3월 4주'],
+                datasets: [
+                    {
+                        label: '등산',
+                        data: [120, 150, 190, 260],
+                        borderColor: '#b91c1c',
+                        backgroundColor: 'rgba(185, 28, 28, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: '테니스',
+                        data: [80, 110, 160, 230],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { borderDash: [5, 5] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 3. Sentiment Plotly (Scatter/Bubble)
+        const sentimentData = [
+            { x: 1, y: 5, text: '맛 개선(긍정)', size: 40, color: '#10b981' },
+            { x: 2, y: 4, text: '디자인(긍정)', size: 30, color: '#10b981' },
+            { x: 3, y: 1, text: '가격저항(부정)', size: 35, color: '#ef4444' },
+            { x: 4, y: 2, text: '패키징불편(부정)', size: 20, color: '#f59e0b' },
+            { x: 1.5, y: 4.5, text: '선물용 적합', size: 25, color: '#10b981' }
+        ];
+
+        Plotly.newPlot('sentimentPlot', [{
+            x: sentimentData.map(d => d.x),
+            y: sentimentData.map(d => d.y),
+            mode: 'markers+text',
+            text: sentimentData.map(d => d.text),
+            textposition: 'top center',
+            marker: {
+                size: sentimentData.map(d => d.size),
+                color: sentimentData.map(d => d.color),
+                opacity: 0.6,
+                line: { width: 1, color: '#fff' }
+            }
+        }], {
+            margin: { t: 10, b: 20, l: 40, r: 40 },
+            showlegend: false,
+            xaxis: { showgrid: false, zeroline: false, showticklabels: false },
+            yaxis: { showgrid: false, zeroline: false, showticklabels: false },
+            hovermode: 'closest',
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
+        }, { responsive: true, displayModeBar: false });
+    }
+
+    /**
+     * STREAMING_CHUNK:AI Integration Functions...
+     */
+    async function callGemini(query, system, useSearch = false) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+        const payload = {
+            contents: [{ parts: [{ text: query }] }],
+            systemInstruction: { parts: [{ text: system }] }
+        };
+        if (useSearch) payload.tools = [{ google_search: {} }];
+
+        let retryCount = 0;
+        while (retryCount < 3) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("API Failure");
+                const json = await res.json();
+                return {
+                    text: json.candidates[0].content.parts[0].text,
+                    sources: json.candidates[0].groundingMetadata?.groundingAttributions || []
+                };
+            } catch (e) {
+                retryCount++;
+                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retryCount)));
+            }
+        }
+    }
+
+    async function runAISummary() {
+        const box = document.getElementById('aiSummaryBox');
+        const btn = document.getElementById('aiBtn');
+        box.innerHTML = '<div class="loading-shimmer h-16 w-full rounded-lg"></div>';
+        btn.disabled = true;
+        btn.innerText = "분석 중...";
+
+        const prompt = "2026년 3월 4주차 정관장 에브리타임 밸런스 판매 성과 요약: 수도권 +15%, 지방 -2%, 2030 구매비중 45%, 아웃도어 키워드 30% 증가. 이 데이터를 바탕으로 BM에게 줄 수 있는 단기적 기회 요소와 위험 요소를 3줄로 정리해줘.";
+        const system = "당신은 KGC의 마케팅 전략 전문가입니다. 데이터 기반의 단호하고 전문적인 인사이트를 제공합니다.";
+
+        try {
+            const result = await callGemini(prompt, system, true);
+            box.innerHTML = `<div class="prose prose-sm leading-snug">${result.text.replace(/\n/g, '<br>')}</div>`;
+        } catch (e) {
+            box.innerHTML = '<span class="text-red-500">분석 실패. 다시 시도해주세요.</span>';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "분석 업데이트";
+        }
+    }
+
+    async function generateAdCopy(platform) {
+        const container = document.getElementById('copyContainer');
+        const tempDiv = document.createElement('div');
+        tempDiv.className = "p-3 bg-white border border-slate-200 rounded-lg text-[11px] loading-shimmer h-20 mb-2";
+        container.prepend(tempDiv);
+
+        const prompt = `플랫폼: ${platform}. 제품: 정관장 에브리타임 밸런스 리뉴얼. 컨셉: 'Active Care' (테니스, 등산 후 활력). 타겟: 2030 사회초년생. 형식: 제목 1줄, 본문 2줄, 해시태그 3개.`;
+        const system = `당신은 ${platform} 플랫폼의 문법을 완벽히 이해하는 MZ 카피라이터입니다.`;
+
+        try {
+            const result = await callGemini(prompt, system, false);
+            tempDiv.classList.remove('loading-shimmer', 'h-20');
+            tempDiv.innerHTML = `<div class="font-bold text-slate-800 mb-1">AI ${platform} Copy</div>${result.text.replace(/\n/g, '<br>')}`;
+        } catch (e) {
+            tempDiv.innerHTML = "카피 생성 실패";
+        }
+    }
+
+    window.onload = function() {
+        initCharts();
+    };
+</script>
+</body>
+</html>
