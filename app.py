@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
+import urllib.parse # 한글 시트명 처리를 위해 추가
 
 # ==========================================================
 # 1. 여기에 본인의 구글 스프레드시트 주소를 입력하세요!
@@ -41,18 +41,28 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 구글 스프레드시트 연결 객체 생성
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 @st.cache_data(ttl=600) # 10분 캐싱
 def load_data(url):
-    # 각 시트의 데이터를 SHEET_URL을 직접 참조하여 읽어옵니다.
-    kpi_df = conn.read(spreadsheet=url, worksheet="KPI", nrows=4)
-    full_kpi = conn.read(spreadsheet=url, worksheet="KPI")
+    # 1. 스프레드시트 ID 추출
+    try:
+        sheet_id = url.split("/d/")[1].split("/")[0]
+    except IndexError:
+        raise Exception("올바르지 않은 구글 시트 URL 형식입니다.")
+
+    # 2. 공용 CSV 접근 URL 생성 함수 (한글 시트명 인코딩 지원)
+    def get_csv_url(sheet_name):
+        encoded_name = urllib.parse.quote(sheet_name)
+        return f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={encoded_name}"
+
+    # 3. 각 시트 읽기 (GSheetsConnection 대신 Pandas 직접 사용)
+    # KPI 시트 읽기
+    full_kpi = pd.read_csv(get_csv_url("KPI"))
+    kpi_df = full_kpi.head(4) # 상단 4개 지표
     summary = full_kpi.iloc[5, 0] if len(full_kpi) > 5 else "데이터 분석 중..."
     
-    region_df = conn.read(spreadsheet=url, worksheet="지역")
-    age_df = conn.read(spreadsheet=url, worksheet="연령")
+    # 지역 및 연령 시트 읽기
+    region_df = pd.read_csv(get_csv_url("지역"))
+    age_df = pd.read_csv(get_csv_url("연령"))
     
     return kpi_df, summary, region_df, age_df
 
@@ -64,11 +74,11 @@ try:
     st.markdown(f"""
         <div class="kgc-header">
             <h1 style='margin:0; font-size: 2.2rem;'>정관장 에브리타임 밸런스 <span style='color:#f87171;'>전략 리포트</span></h1>
-            <p style='margin:0.5rem 0 0 0; color:#94a3b8;'>기준일: {datetime.now().strftime('%Y.%m.%d')} (실시간 연동 모드)</p>
+            <p style='margin:0.5rem 0 0 0; color:#94a3b8;'>기준일: {datetime.now().strftime('%Y.%m.%d')} (Public View 모드)</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # [전략 인사이트 박스] - KPI 시트의 7행 데이터
+    # [전략 인사이트 박스]
     st.markdown(f"""
         <div class="insight-box">
             <h4 style='margin-top:0; color:#1e293b;'>📢 Weekly Strategic Insight</h4>
@@ -79,11 +89,14 @@ try:
     # [KPI 지표 레이아웃]
     cols = st.columns(4)
     for i, row in df_kpi.iterrows():
-        if i < 4:
-            with cols[i]:
-                val = row['value']
-                display_val = f"{val*100:.1f}%" if isinstance(val, float) and val <= 1 else f"{val}"
-                st.metric(label=row['label'], value=display_val, delta=row['delta'])
+        with cols[i]:
+            val = row['value']
+            # 숫자형 데이터 포맷팅
+            if isinstance(val, (int, float)):
+                display_val = f"{val*100:.1f}%" if val <= 1 else f"{val:,.0f}"
+            else:
+                display_val = str(val)
+            st.metric(label=row['label'], value=display_val, delta=row['delta'])
 
     st.write("---")
 
@@ -110,10 +123,7 @@ try:
 
 except Exception as e:
     st.error(f"데이터 연동 중 오류가 발생했습니다.")
-    st.write(f"상세 에러: {e}")
-    st.info("💡 해결 방법: 코드 상단의 SHEET_URL이 정확한지, 구글 시트 공유 설정이 '링크가 있는 모든 사용자(뷰어)'인지 확인해 주세요.")
+    st.write(f"상세 에러 내용: {e}")
+    st.info("💡 해결 방법: 구글 시트 우상단 [공유] 버튼 클릭 -> [일반 액세스]를 '링크가 있는 모든 사용자'와 '뷰어'로 설정했는지 다시 확인해 주세요.")
 
-st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.75rem;'>본 리포트는 구글 스프레드시트 데이터를 실시간으로 반영합니다.</p>", unsafe_allow_html=True)
-
-
-
+st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.75rem;'>본 리포트는 구글 스프레드시트의 공개 데이터를 실시간으로 참조합니다.</p>", unsafe_allow_html=True)
